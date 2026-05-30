@@ -32,12 +32,12 @@ interface EventCardProps {
 // This function is now replaced by the event cover generator
 
 const getParticipantBadgeColor = (current: number, max?: number): string => {
-  if (!max) return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+  if (!max) return "bg-white/10 text-emerald-300 border-emerald-400/40";
   
   const ratio = current / max;
-  if (ratio < 0.5) return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-  if (ratio < 0.8) return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-  return "bg-red-500/20 text-red-400 border-red-500/30";
+  if (ratio < 0.5) return "bg-white/10 text-emerald-300 border-emerald-400/40";
+  if (ratio < 0.8) return "bg-white/10 text-amber-300 border-amber-400/40";
+  return "bg-white/10 text-red-300 border-red-400/40";
 };
 
 export function EventCard({ event, onAction }: EventCardProps) {
@@ -190,42 +190,42 @@ export function EventCard({ event, onAction }: EventCardProps) {
 
   return (
     <div 
-      className="w-full bg-dashboard-card rounded-xl overflow-hidden relative group cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+      className="w-full bg-dashboard-card rounded-[1.5rem] overflow-hidden relative group cursor-pointer shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(241,216,110,0.15)] transition-all duration-500 hover:-translate-y-1.5 border border-white/5"
       onClick={handleCardClick}
     >
       {/* Background Image or Generated Cover */}
-      <div className="h-48 relative overflow-hidden">
+      <div className="h-56 relative overflow-hidden">
         {shouldUseGeneratedCover ? (
           <>
             {generateEventCover(event.sport, event.customSportName)}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#031d24]/95 via-[#031d24]/60 to-transparent transition-opacity duration-300" />
           </>
         ) : (
           <>
             <div 
-              className="w-full h-full bg-cover bg-center"
+              className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
               style={{
                 backgroundImage: `url(${coverImage})`,
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#031d24] via-[#031d24]/60 to-transparent/30" />
           </>
         )}
         
         {/* Content Container */}
-        <div className="absolute inset-0 p-4 flex flex-col justify-between">
+        <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
           {/* Top Section - Status or Participant Badge */}
           <div className="flex justify-between items-start">
             {event.status ? (
-              <div className={`flex items-center space-x-1 px-2 py-1 rounded-full bg-black/30 backdrop-blur-sm ${getStatusColor(event.status)}`}>
+              <div className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 shadow-lg ${getStatusColor(event.status)}`}>
                 {getStatusIcon(event.status)}
-                <span className="text-xs font-medium">
+                <span className="text-xs font-semibold tracking-wide uppercase">
                   {getStatusText(event.status)}
                 </span>
               </div>
             ) : (
-              <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getParticipantBadgeColor(event.participants || 0, event.maxParticipants)}`}>
-                <Users className="h-3 w-3 mr-1" />
+              <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-md border ${getParticipantBadgeColor(event.participants || 0, event.maxParticipants)}`}>
+                <Users className="h-3.5 w-3.5 mr-1.5 stroke-[2.5]" />
                 {event.participants || 0}
                 {event.maxParticipants && `/${event.maxParticipants}`}
               </div>
@@ -233,44 +233,46 @@ export function EventCard({ event, onAction }: EventCardProps) {
           </div>
 
           {/* Bottom Section - Main Content */}
-          <div className="space-y-3">
-            {/* Date and Time - Prominent Display */}
-            <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
-              <Calendar className="h-4 w-4 text-white flex-shrink-0" />
-              <span className="text-white font-semibold text-sm">{event.date}</span>
-              <div className="h-3 w-px bg-white/40"></div>
-              <span className="text-white font-semibold text-sm">{event.time}</span>
-            </div>
-
+          <div className="space-y-3.5">
             {/* Title */}
-            <h3 className="text-white font-bold text-xl leading-tight drop-shadow-lg">
+            <h3 className="text-white font-extrabold text-[22px] leading-tight drop-shadow-md">
               {event.title}
             </h3>
             
-            {/* Event Details */}
+            {/* Date and Time - New Glassmorphism Layout */}
+            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-xl px-4 py-2.5 border border-white/10 shadow-inner w-fit">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-4 w-4 text-[rgba(241,216,110,1)]" />
+                <span className="text-white font-semibold text-sm tracking-wide">{event.date}</span>
+              </div>
+              <div className="h-3.5 w-[1px] bg-white/20"></div>
+              <span className="text-white font-semibold text-sm tracking-wide">{event.time}</span>
+            </div>
+
+            {/* Event Info Tags */}
             <div className="flex flex-wrap gap-2">
-              <div className="flex items-center gap-1.5 text-sm text-white/90 bg-black/20 backdrop-blur-sm rounded-md px-2.5 py-1">
-                <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="truncate max-w-[140px]">{event.location}</span>
+              <div className="flex items-center gap-1.5 text-xs font-medium text-white/95 bg-black/30 backdrop-blur-md border border-white/5 rounded-lg px-3 py-1.5">
+                <MapPin className="h-3.5 w-3.5 text-white/70" />
+                <span className="truncate max-w-[150px]">{event.location}</span>
               </div>
               
               {event.distance && (
-                <div className="flex items-center gap-1.5 text-sm text-emerald-300 bg-emerald-500/20 backdrop-blur-sm rounded-md px-2.5 py-1 border border-emerald-400/30">
-                  <LocateFixed className="h-3.5 w-3.5 flex-shrink-0" />
+                <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-300 bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 rounded-lg px-3 py-1.5">
+                  <LocateFixed className="h-3.5 w-3.5" />
                   <span className="whitespace-nowrap">{event.distance}</span>
                 </div>
               )}
               
               {event.skillLevel && (
-                <div className="flex items-center gap-1.5 text-sm text-white/90 bg-black/20 backdrop-blur-sm rounded-md px-2.5 py-1">
-                  <Trophy className="h-3.5 w-3.5 flex-shrink-0" />
+                <div className="flex items-center gap-1.5 text-xs font-medium text-white/95 bg-black/30 backdrop-blur-md border border-white/5 rounded-lg px-3 py-1.5">
+                  <Trophy className="h-3.5 w-3.5 text-white/70" />
                   <span className="truncate">{event.skillLevel}</span>
                 </div>
               )}
             </div>
 
-            {/* Action Button */}
-            <div onClick={(e) => e.stopPropagation()} className="flex justify-end">
+            {/* Action Button - Floating styling */}
+            <div onClick={(e) => e.stopPropagation()} className="absolute bottom-5 right-5">
               {getActionButton()}
             </div>
           </div>
