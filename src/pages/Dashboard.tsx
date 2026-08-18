@@ -1,16 +1,20 @@
-import { useState, useEffect } from "react";
-import { Plus, Users, Dumbbell, Waves, Grip, ChevronRight, Activity, CalendarPlus, Bell, Calendar as CalendarIcon, Clock, MapPin } from "lucide-react";
+import { useState } from "react";
+import { Users, Dumbbell, Waves, Grip, ChevronRight, Activity, CalendarPlus, Bell, Calendar as CalendarIcon, Clock, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { RegistrationSuccessModal } from "@/components/registration-success-modal";
 import { Header } from "@/components/dashboard/header";
 import { EventSection } from "@/components/dashboard/event-section";
 import { EventData } from "@/components/dashboard/event-card";
-import { useEvents } from "@/hooks/useEvents";
+import { EventListSkeleton } from "@/components/dashboard/EventCardSkeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { useAmenityStore } from "@/store/amenityStore";
-import { useMatchmakingStore } from "@/store/matchmakingStore";
+// ✅ Sprint 2: React Query hooks em vez de Zustand para dados de servidor
+import { useEventsQuery, useJoinEventMutation } from "@/hooks/useEventsQuery";
+import { useAmenitiesQuery } from "@/hooks/useAmenitiesQuery";
+// ✅ Sprint 2: Realtime hooks com cleanup seguro (sem memory leak)
+import { useRealtimeEvents } from "@/hooks/useRealtimeEvents";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import soccerField from "@/assets/soccer-field.jpg";
 
 // Helper function to pick icon based on amenity name/type
@@ -30,31 +34,38 @@ const getColorForAmenityStatus = (status: string) => {
   return "bg-orange-500/10 text-orange-500 text-orange-400";
 };
 
+// ✅ Sprint 2: Skeleton para o grid de áreas comuns (espelha 4 cards 2x2)
+const AmenitiesGridSkeleton = () => (
+  <div className="grid grid-cols-2 gap-3">
+    {[1,2,3,4].map(i => (
+      <div key={i} className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
+        <Skeleton className="w-10 h-10 rounded-full mb-3 bg-white/[0.06]" />
+        <Skeleton className="h-4 w-3/4 rounded mb-4 bg-white/[0.06]" />
+        <div className="flex justify-between">
+          <Skeleton className="h-3 w-10 rounded bg-white/[0.06]" />
+          <Skeleton className="h-3 w-12 rounded bg-white/[0.06]" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
-  const { events, loading: eventsLoading } = useEvents();
-  const { joinEvent } = useEvents(); // Separated for clarity
-  const { amenities, fetchAmenities, checkIn, checkOut, loading: amenitiesLoading } = useAmenityStore();
-  const { requests, fetchRequests, loading: matchmakingLoading } = useMatchmakingStore();
+  const { user } = useAuth();
+  const condominiumId = user?.user_metadata?.condominium_id as string | undefined;
+
+  // ✅ Sprint 2: React Query com cache inteligente (substituindo Zustand)
+  const { data: events = [], isLoading: eventsLoading } = useEventsQuery(user?.id);
+  const { data: amenities = [], isLoading: amenitiesLoading } = useAmenitiesQuery(condominiumId);
+  const joinEventMutation = useJoinEventMutation();
+
+  // ✅ Sprint 2: Realtime — escuta eventos do condomínio em tempo real
+  useRealtimeEvents(condominiumId);
+
   const [activeTab, setActiveTab] = useState<"mapa" | "buscar" | "eventos">("eventos");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successEventData, setSuccessEventData] = useState<any>(null);
-
-  // Redirect to login if not authenticated 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/login');
-    }
-  }, [user, authLoading, navigate]);
-
-  // Fetch initial data based on user's condominium
-  useEffect(() => {
-    if (user?.user_metadata?.condominium_id) {
-      fetchAmenities(user.user_metadata.condominium_id);
-      fetchRequests(user.user_metadata.condominium_id);
-    }
-  }, [user, fetchAmenities, fetchRequests]);
 
   // Convert real events to EventData format
   const convertToEventData = (events: any[]): EventData[] => {
@@ -71,33 +82,62 @@ const Dashboard = () => {
       participants: event.participant_count || 0,
       maxParticipants: event.max_participants,
       status: event.status === 'completed' ? 'encerrado' : undefined,
-      distance: "No seu condomínio", 
+      distance: "No seu condomínio",
       skillLevel: event.skill_level || "Amigável"
     }));
   };
 
   const handleEventAction = async (eventId: string, action: string) => {
     if (action === "inscrever") {
-      const result = await joinEvent(eventId);
-      if (result.success) {
-        setSuccessEventData(result.eventData);
-        setShowSuccessModal(true);
-      } else {
-        toast.error(result.error || "Erro ao se inscrever");
-      }
+      // ✅ Sprint 2: mutation React Query (invalida cache e atualiza lista automaticamente)
+      joinEventMutation.mutate(
+        { eventId, userId: user?.id || "fake-user-id" },
+        {
+          onSuccess: () => {
+            const eventData = events.find(e => e.id === eventId);
+            setSuccessEventData(eventData);
+            setShowSuccessModal(true);
+          },
+        }
+      );
     } else if (action === "avaliar") {
       navigate(`/event/${eventId}`);
     }
   };
 
   const renderContent = () => {
-    if (authLoading || eventsLoading || amenitiesLoading || (matchmakingLoading && requests.length === 0)) {
+    // ✅ Sprint 2: Skeleton espelhado no lugar do spinner/texto genérico
+    if (eventsLoading || amenitiesLoading) {
       return (
-        <div className="flex items-center justify-center h-96 text-[rgba(238,243,243,1)]">
-          <p className="text-xl animate-pulse">Carregando Condomínio...</p>
+        <div className="space-y-8 pb-10">
+          {/* Hero skeleton */}
+          <div className="bg-white/[0.03] border border-white/5 p-6 rounded-3xl">
+            <Skeleton className="h-8 w-48 mb-2 bg-white/[0.06]" />
+            <Skeleton className="h-4 w-32 bg-white/[0.06]" />
+          </div>
+          {/* Quick actions skeleton */}
+          <div className="flex justify-between gap-2">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="flex flex-col items-center gap-2 w-1/4">
+                <Skeleton className="w-14 h-14 rounded-full bg-white/[0.06]" />
+                <Skeleton className="h-3 w-12 rounded bg-white/[0.06]" />
+              </div>
+            ))}
+          </div>
+          {/* Áreas comuns skeleton */}
+          <div>
+            <Skeleton className="h-5 w-32 mb-3 bg-white/[0.06]" />
+            <AmenitiesGridSkeleton />
+          </div>
+          {/* Feed de eventos skeleton */}
+          <div>
+            <Skeleton className="h-5 w-40 mb-3 bg-white/[0.06]" />
+            <EventListSkeleton count={2} />
+          </div>
         </div>
       );
     }
+
 
     const eventData = convertToEventData(events);
     const availableEvents = eventData.filter(event => event.status !== 'encerrado');

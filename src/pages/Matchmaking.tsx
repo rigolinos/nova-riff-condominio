@@ -1,46 +1,50 @@
-import { useState, useEffect } from "react";
-import { Header } from "@/components/dashboard/header";
+/**
+ * @file Matchmaking.tsx
+ * Sprint 2: Refatorado com React Query + Realtime + Skeletons espelhados.
+ * - useMatchmakingQuery substitui useMatchmakingStore
+ * - useRealtimeMatchmaking escuta novos avisos ao vivo (com cleanup seguro)
+ * - MatchmakingListSkeleton elimina o spinner genérico
+ */
+import { useState } from "react";
 import { MatchmakingForm } from "@/components/matchmaking/matchmaking-form";
 import { MatchmakingList } from "@/components/matchmaking/matchmaking-list";
+import { MatchmakingListSkeleton } from "@/components/matchmaking/MatchmakingCardSkeleton";
 import { useAuth } from "@/hooks/useAuth";
-import { useMatchmakingStore } from "@/store/matchmakingStore";
+import { useMatchmakingQuery } from "@/hooks/useMatchmakingQuery";
+import { useRealtimeMatchmaking } from "@/hooks/useRealtimeMatchmaking";
 import { ArrowLeft, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Matchmaking = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { requests, fetchRequests, loading } = useMatchmakingStore();
+  const condominiumId = user?.user_metadata?.condominium_id as string | undefined;
+
+  // ✅ Sprint 2: React Query com staleTime curto (30s) para dado dinâmico
+  const { data: requests = [], isLoading } = useMatchmakingQuery(condominiumId);
+
+  // ✅ Sprint 2: Realtime com cleanup garantido
+  useRealtimeMatchmaking(condominiumId);
+
   const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => {
-    if (user?.user_metadata?.condominium_id) {
-      fetchRequests(user.user_metadata.condominium_id);
-    }
-  }, [user, fetchRequests]);
-
-  const toggleForm = () => {
-    setShowForm(!showForm);
-  };
-
   const handleFormSubmitted = () => {
-    if (user?.user_metadata?.condominium_id) {
-      fetchRequests(user.user_metadata.condominium_id);
-    }
     setShowForm(false);
+    // React Query + Realtime atualizam a lista automaticamente — sem fetchRequests manual
   };
 
   return (
     <div className="min-h-screen bg-[rgba(3,29,36,1)] max-w-[480px] mx-auto relative overflow-hidden font-sans flex flex-col">
       <header className="px-5 pt-12 pb-6 border-b border-[rgba(255,255,255,0.05)] sticky top-0 bg-[rgba(3,29,36,0.95)] backdrop-blur-md z-10 flex items-center justify-between">
-        <button 
+        {/* ✅ Sprint 2: min-w/h 44px para touch target acessível em mobile */}
+        <button
           onClick={() => navigate('/dashboard')}
-          className="w-10 h-10 rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[rgba(238,243,243,1)] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+          className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[rgba(238,243,243,1)] hover:bg-[rgba(255,255,255,0.1)] active:scale-95 transition-all"
         >
           <ArrowLeft size={20} />
         </button>
         <span className="text-[rgba(238,243,243,1)] font-bold text-lg">Tô Disponível 🎾</span>
-        <div className="w-10"></div> {/* Spacer to center the title */}
+        <div className="w-11"></div>
       </header>
 
       <main className="p-5 pb-24 flex-1 overflow-y-auto">
@@ -54,9 +58,10 @@ const Matchmaking = () => {
           <p className="text-[rgba(238,243,243,0.7)] text-sm mb-5">
             Avise os moradores do seu condomínio que você quer jogar ou chame quem já sinalizou.
           </p>
-          <button 
-            onClick={toggleForm}
-            className="w-full bg-[rgba(241,216,110,1)] text-[rgba(3,29,36,1)] py-3 rounded-full text-base font-bold hover:bg-[rgba(241,216,110,0.9)] transition-colors shadow-[0_4px_14px_0_rgba(241,216,110,0.4)]"
+          {/* ✅ Sprint 2: active:scale-95 para feedback tátil imediato no mobile */}
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="w-full bg-[rgba(241,216,110,1)] text-[rgba(3,29,36,1)] py-3 rounded-full text-base font-bold hover:bg-[rgba(241,216,110,0.9)] active:scale-95 transition-all shadow-[0_4px_14px_0_rgba(241,216,110,0.4)]"
           >
             {showForm ? 'Cancelar requisição' : 'Avisar que quero jogar'}
           </button>
@@ -64,7 +69,7 @@ const Matchmaking = () => {
 
         {showForm && (
           <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-300">
-            <MatchmakingForm onCancel={toggleForm} onSuccess={handleFormSubmitted} />
+            <MatchmakingForm onCancel={() => setShowForm(false)} onSuccess={handleFormSubmitted} />
           </div>
         )}
 
@@ -74,12 +79,11 @@ const Matchmaking = () => {
             <span className="text-[rgba(238,243,243,0.5)] text-sm">{requests.length} requisições</span>
           </div>
 
-          {loading ? (
-             <div className="flex justify-center py-8">
-               <div className="w-8 h-8 rounded-full border-t-2 border-[rgba(241,216,110,1)] animate-spin"></div>
-             </div>
+          {/* ✅ Sprint 2: Skeleton espelhado no lugar do spinner */}
+          {isLoading ? (
+            <MatchmakingListSkeleton count={3} />
           ) : (
-             <MatchmakingList requests={requests} />
+            <MatchmakingList requests={requests} />
           )}
         </div>
       </main>
