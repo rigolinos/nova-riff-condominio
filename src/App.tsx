@@ -24,7 +24,8 @@ import EventEvaluation from "./pages/EventEvaluation";
 import Matchmaking from "./pages/Matchmaking";
 import Amenities from "./pages/Amenities";
 import GuestList from "./pages/GuestList";
-import PortariaDashboard from "./pages/PortariaDashboard";
+import GatekeeperScanner from "./pages/GatekeeperScanner";
+
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PublicRoute } from "./components/PublicRoute";
 import { ScrollToTop } from "./components/ScrollToTop";
@@ -68,8 +69,13 @@ const App = () => (
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
+          {/* ✅ Sprint 3: Portaria Digital com QR Code */}
+          <Route path="/gatekeeper/:eventId" element={<ProtectedRoute><GatekeeperScanner /></ProtectedRoute>} />
+          {/* Rota de validação via QR Code scanneado pela câmera */}
+          <Route path="/gatekeeper/validate/:token" element={<ProtectedRoute><GatekeeperScanner /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
+
         </Routes>
         <BottomNav />
       </BrowserRouter>
