@@ -1,12 +1,8 @@
-import { LoginForm } from "@/components/login-form";
-import { Link } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 const Index = () => {
-  return (
-    <div className="bg-[rgba(3,29,36,1)] min-h-screen">
-      <LoginForm />
-    </div>
-  );
+  // BYPASSED LOGIN: Redirect to dashboard directly
+  return <Navigate to="/dashboard" replace />;
 };
 
 export default Index;

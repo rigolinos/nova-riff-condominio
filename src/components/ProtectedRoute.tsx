@@ -8,22 +8,6 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/login');
-    }
-  }, [user, loading, navigate]);
-
-  if (loading) {
-    return <LoadingScreen />;
-  }
-
-  if (!user) {
-    return null;
-  }
-
+  // BYPASSED LOGIN: Always rendering children
   return <>{children}</>;
 };

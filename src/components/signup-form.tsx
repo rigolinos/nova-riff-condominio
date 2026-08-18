@@ -99,10 +99,7 @@ export const SignupForm: React.FC = () => {
       formData.fullName.trim().length > 0 &&
       formData.password.length >= 6 &&
       formData.confirmPassword.length >= 6 &&
-      formData.password === formData.confirmPassword &&
-      (formData.inviteCode.trim().length > 0 || formData.condominiumId) &&
-      formData.block.trim().length > 0 &&
-      formData.apt.trim().length > 0
+      formData.password === formData.confirmPassword
     );
   };
 
@@ -146,7 +143,7 @@ export const SignupForm: React.FC = () => {
       const sanitizedEmail = formData.email.trim().toLowerCase();
       console.log('📧 Email sanitizado:', sanitizedEmail);
       
-      let finalCondoId = formData.condominiumId;
+      let finalCondoId = formData.condominiumId || null;
       
       if (formData.inviteCode.trim()) {
         console.log('🏢 Consultando código de convite:', formData.inviteCode);
@@ -163,10 +160,6 @@ export const SignupForm: React.FC = () => {
         }
         finalCondoId = condoData.id;
         console.log(`✅ Condomínio encontrado pelo convite: ${condoData.name} (${condoData.id})`);
-      } else if (!finalCondoId) {
-        toast.error("Por favor, informe o código de convite ou selecione um condomínio.");
-        setIsLoading(false);
-        return;
       }
 
       console.log('🚀 Chamando supabase.auth.signUp...');
@@ -285,7 +278,7 @@ export const SignupForm: React.FC = () => {
               onChange={(e) => handleInputChange("condominiumId", e.target.value)}
               className="flex h-[60px] w-full rounded-3xl border-2 border-[rgba(119,136,143,1)] bg-transparent px-6 text-base text-[rgba(238,243,243,1)] focus-visible:outline-none focus-visible:border-[rgba(241,216,110,1)] [&>option]:text-black"
             >
-              <option value="">Selecione seu Condomínio...</option>
+              <option value="">Selecione seu Condomínio (Opcional)...</option>
               {condominiums.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -297,19 +290,17 @@ export const SignupForm: React.FC = () => {
           <CustomInput
             type="text"
             name="block"
-            placeholder="Bloco/Torre:"
+            placeholder="Bloco/Torre (Opcional):"
             value={formData.block}
             onChange={(value) => handleInputChange("block", value)}
-            required
             autoComplete="off"
           />
           <CustomInput
             type="text"
             name="apt"
-            placeholder="Nº do Apartamento:"
+            placeholder="Nº do Apto (Opcional):"
             value={formData.apt}
             onChange={(value) => handleInputChange("apt", value)}
-            required
             autoComplete="off"
           />
         </div>

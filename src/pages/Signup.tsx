@@ -1,7 +1,7 @@
-import { SignupForm } from "@/components/signup-form";
+import { Navigate } from "react-router-dom";
 
 const Signup = () => {
-  return <SignupForm />;
+  return <Navigate to="/dashboard" replace />;
 };
 
 export default Signup;

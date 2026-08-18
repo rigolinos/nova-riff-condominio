@@ -115,10 +115,13 @@ export function useAuth() {
     return { error };
   };
 
+  // Bypass authentication completely and return a mock user
+  const mockUserId = "455e45a0-b9ec-4d5a-b9f0-7d2c994d6805"; // use the one we created in test_fetch
+  
   return {
-    user,
-    session,
-    loading,
+    user: { id: mockUserId, email: 'fake@example.com' } as User,
+    session: { user: { id: mockUserId } } as unknown as Session,
+    loading: false,
     signUp,
     signIn,
     signOut

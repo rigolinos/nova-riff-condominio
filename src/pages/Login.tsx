@@ -1,7 +1,7 @@
-import { LoginPageForm } from "@/components/login-page-form";
+import { Navigate } from "react-router-dom";
 
 const Login = () => {
-  return <LoginPageForm />;
+  return <Navigate to="/dashboard" replace />;
 };
 
 export default Login;
