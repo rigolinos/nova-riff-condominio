@@ -20,11 +20,10 @@ interface PraiseTag {
 }
 
 const praiseTags: PraiseTag[] = [
-  { id: "comunicativo", label: "Comunicativo", icon: MessageSquare },
-  { id: "trabalho_equipe", label: "Trabalho em equipe", icon: Users },
-  { id: "habilidoso", label: "Habilidoso", icon: Trophy },
-  { id: "amigavel", label: "Amigável", icon: Coffee },
-  { id: "esforcado", label: "Esforçado", icon: Flag },
+  { id: "jogo_limpo", label: "Jogo Limpo", icon: Users },
+  { id: "pontual", label: "Pontual", icon: Coffee },
+  { id: "joga_junto", label: "Joga Junto", icon: MessageSquare },
+  { id: "craque", label: "Craque da Rodada", icon: Trophy },
 ];
 
 export default function EventEvaluation() {
@@ -38,7 +37,7 @@ export default function EventEvaluation() {
   const [selectedPlayerForPraise, setSelectedPlayerForPraise] = useState<string | null>(null);
   const [selectedPraiseTags, setSelectedPraiseTags] = useState<string[]>([]);
   const [eventComment, setEventComment] = useState("");
-  const [eventTitle, setEventTitle] = useState("Avalie seu último jogo");
+  const [eventTitle, setEventTitle] = useState("Como foi a energia da partida hoje? ⚽");
   const [eventSubtitle, setEventSubtitle] = useState("Jogo de queimada • Organizador: Julia Alcantra");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -127,7 +126,7 @@ export default function EventEvaluation() {
       if (error) throw error;
       
       if (data) {
-        setEventTitle(`Avalie seu último jogo`);
+        setEventTitle(`Como foi a energia da partida hoje? ⚽`);
         setEventSubtitle(`${data.title} • Organizador: Usuário`);
       }
     } catch (error) {

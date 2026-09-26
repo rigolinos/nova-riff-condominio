@@ -28,7 +28,7 @@ export function useAuth() {
       if (error) {
         console.error('useAuth: Error getting session:', error);
         // Clear potentially corrupted auth data
-        localStorage.removeItem('sb-tzvuzruustalqqbkanat-auth-token');
+        localStorage.removeItem('sb-jvxxnfrcxahycfjpvipf-auth-token');
         setSession(null);
         setUser(null);
       } else {
@@ -39,7 +39,7 @@ export function useAuth() {
     }).catch((error) => {
       console.error('useAuth: Session check failed:', error);
       // Clear corrupted auth data on any error
-      localStorage.removeItem('sb-tzvuzruustalqqbkanat-auth-token');
+      localStorage.removeItem('sb-jvxxnfrcxahycfjpvipf-auth-token');
       setSession(null);
       setUser(null);
       setLoading(false);
@@ -115,13 +115,10 @@ export function useAuth() {
     return { error };
   };
 
-  // Bypass authentication completely and return a mock user
-  const mockUserId = "455e45a0-b9ec-4d5a-b9f0-7d2c994d6805"; // use the one we created in test_fetch
-  
   return {
-    user: { id: mockUserId, email: 'fake@example.com' } as User,
-    session: { user: { id: mockUserId } } as unknown as Session,
-    loading: false,
+    user,
+    session,
+    loading,
     signUp,
     signIn,
     signOut

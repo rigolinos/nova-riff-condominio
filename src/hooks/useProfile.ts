@@ -141,21 +141,9 @@ export function useProfile() {
     }
   };
 
-  // Bypass backend completely and return a mock profile
-  const mockProfile: Profile = {
-    id: "fake-profile-id",
-    user_id: user?.id || "fake-user-id",
-    full_name: "Visitante",
-    phone: "",
-    city: "",
-    birth_date: "1990-01-01",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-
   return {
-    profile: mockProfile,
-    loading: false,
+    profile,
+    loading,
     updateProfile,
     refetch: fetchProfile
   };

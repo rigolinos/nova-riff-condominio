@@ -90,10 +90,6 @@ const MOCK_EVENTS: Event[] = [
 ];
 
 async function fetchEvents(userId?: string): Promise<Event[]> {
-  // BYPASS: retorna dados mockados enquanto a auth está desativada
-  return MOCK_EVENTS;
-
-  /* -- Código real (será reativado na Sprint 2 junto com Auth + Realtime) --
   const { data, error } = await supabase
     .from("events")
     .select(`*, event_participants!left (user_id, status, evaluation_status)`)
@@ -114,7 +110,6 @@ async function fetchEvents(userId?: string): Promise<Event[]> {
       user_evaluation_status: userParticipation?.evaluation_status,
     };
   });
-  */
 }
 
 export function useEventsQuery(userId?: string) {
@@ -137,10 +132,6 @@ export function useEventDetailQuery(eventId: string | undefined) {
     queryFn: async (): Promise<Event | null> => {
       if (!eventId) return null;
 
-      // BYPASS mock
-      return MOCK_EVENTS.find((e) => e.id === eventId) ?? null;
-
-      /* -- Código real --
       const { data, error } = await supabase
         .from("events")
         .select(`*, event_participants!left (user_id, status, evaluation_status)`)
@@ -148,7 +139,6 @@ export function useEventDetailQuery(eventId: string | undefined) {
         .single();
       if (error) throw error;
       return data;
-      */
     },
     enabled: !!eventId,
     staleTime: 1 * 60 * 1000,
@@ -170,22 +160,20 @@ export function useJoinEventMutation() {
       eventId: string;
       userId: string;
     }) => {
-      // BYPASS: simula sucesso local
-      return { success: true };
-
-      /* -- Código real --
-      const { error } = await supabase.from("event_participants").insert({
-        event_id: eventId,
-        user_id: userId,
-        status: "registered",
-      });
+      const { error } = await supabase.from("event_participants").insert([
+        {
+          event_id: eventId,
+          user_id: userId,
+          status: "registered",
+        },
+      ]);
       if (error) throw error;
-      */
     },
-    onSuccess: () => {
-      // Invalida e re-busca a lista de eventos para atualizar os contadores
-      queryClient.invalidateQueries({ queryKey: eventKeys.all });
-      toast({ title: "Inscrição confirmada!" });
+    onSuccess: (_, { eventId }) => {
+      // Invalida a lista geral e os detalhes do evento específico
+      queryClient.invalidateQueries({ queryKey: eventKeys.list() });
+      queryClient.invalidateQueries({ queryKey: eventKeys.detail(eventId) });
+      toast({ title: "Participação confirmada!" });
     },
     onError: () => {
       toast({
@@ -197,7 +185,7 @@ export function useJoinEventMutation() {
 }
 
 // ---------------------------------------------------------------------------
-// Mutation: Sair de evento
+// Mutation: Sair do evento
 // ---------------------------------------------------------------------------
 
 export function useLeaveEventMutation() {
@@ -211,21 +199,17 @@ export function useLeaveEventMutation() {
       eventId: string;
       userId: string;
     }) => {
-      // BYPASS
-      return { success: true };
-
-      /* -- Código real --
       const { error } = await supabase
         .from("event_participants")
-        .delete()
+        .update({ status: "cancelled" })
         .eq("event_id", eventId)
         .eq("user_id", userId);
       if (error) throw error;
-      */
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: eventKeys.all });
-      toast({ title: "Inscrição cancelada" });
+    onSuccess: (_, { eventId }) => {
+      queryClient.invalidateQueries({ queryKey: eventKeys.list() });
+      queryClient.invalidateQueries({ queryKey: eventKeys.detail(eventId) });
+      toast({ title: "Você saiu do evento." });
     },
     onError: () => {
       toast({ title: "Erro ao cancelar inscrição", variant: "destructive" });

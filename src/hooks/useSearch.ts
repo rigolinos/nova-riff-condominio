@@ -80,7 +80,7 @@ export function useSearch() {
             name: profile.full_name,
             city: profile.city,
             image: profile.profile_photo_url,
-            rating: 5 // Mock rating - will implement with reviews later
+            rating: profile.user_rating || 5 // Puxa do banco, com 5 de fallback
           }));
           results.push(...profileResults);
         }

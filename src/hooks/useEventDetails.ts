@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useEventStore } from '@/store/eventStore';
+import { useJoinEventMutation, useLeaveEventMutation } from '@/hooks/useEventsQuery';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface EventDetails {
   id: string;
@@ -48,10 +49,9 @@ export function useEventDetails(eventId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Use global store for join/leave actions to maintain consistency
-  const globalJoinEvent = useEventStore(state => state.joinEvent);
-  const globalLeaveEvent = useEventStore(state => state.leaveEvent);
-  const refreshSingleEvent = useEventStore(state => state.refreshSingleEvent);
+  const { user } = useAuth();
+  const joinMutation = useJoinEventMutation();
+  const leaveMutation = useLeaveEventMutation();
 
   const fetchEventDetails = useCallback(async () => {
     if (!eventId) return;
@@ -94,7 +94,7 @@ export function useEventDetails(eventId: string) {
         user_participation_status: userParticipation?.status,
         user_evaluation_status: userParticipation?.evaluation_status,
         creator_name: creatorProfile?.[0]?.full_name || 'Usuário',
-        creator_rating: 5 // Mock rating - will implement with reviews later
+        creator_rating: creatorProfile?.[0]?.user_rating || 5 // Usa a nota real do banco, ou 5 se não houver avaliação ainda
       };
 
       setEvent(eventDetails);
@@ -151,28 +151,26 @@ export function useEventDetails(eventId: string) {
   }, []);
 
   const joinEvent = useCallback(async () => {
-    const result = await globalJoinEvent(eventId);
-    if (result.success) {
-      // Refresh local event details and global store
-      await Promise.all([
-        fetchEventDetails(),
-        refreshSingleEvent(eventId)
-      ]);
+    if (!user) return { success: false, error: 'User not logged in' };
+    try {
+      await joinMutation.mutateAsync({ eventId, userId: user.id });
+      await fetchEventDetails();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error };
     }
-    return result;
-  }, [eventId, globalJoinEvent, refreshSingleEvent]);
+  }, [eventId, joinMutation, user, fetchEventDetails]);
 
   const leaveEvent = useCallback(async () => {
-    const result = await globalLeaveEvent(eventId);
-    if (result.success) {
-      // Refresh local event details and global store
-      await Promise.all([
-        fetchEventDetails(),
-        refreshSingleEvent(eventId)
-      ]);
+    if (!user) return { success: false, error: 'User not logged in' };
+    try {
+      await leaveMutation.mutateAsync({ eventId, userId: user.id });
+      await fetchEventDetails();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error };
     }
-    return result;
-  }, [eventId, globalLeaveEvent, refreshSingleEvent]);
+  }, [eventId, leaveMutation, user, fetchEventDetails]);
 
   useEffect(() => {
     fetchEventDetails();

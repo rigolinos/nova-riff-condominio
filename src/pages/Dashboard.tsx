@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Dumbbell, Waves, Grip, ChevronRight, Activity, CalendarPlus, Bell, Calendar as CalendarIcon, Clock, MapPin } from "lucide-react";
+import { Users, Dumbbell, Waves, Grip, ChevronRight, Activity, CalendarPlus, Bell, Calendar as CalendarIcon, Clock, MapPin, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { RegistrationSuccessModal } from "@/components/registration-success-modal";
@@ -8,11 +8,13 @@ import { EventSection } from "@/components/dashboard/event-section";
 import { EventData } from "@/components/dashboard/event-card";
 import { EventListSkeleton } from "@/components/dashboard/EventCardSkeleton";
 import { useAuth } from "@/hooks/useAuth";
+import { useCondominiumId } from "@/hooks/useCondominiumId";
 // ✅ Sprint 2: React Query hooks em vez de Zustand para dados de servidor
 import { useEventsQuery, useJoinEventMutation } from "@/hooks/useEventsQuery";
 import { useAmenitiesQuery } from "@/hooks/useAmenitiesQuery";
-// ✅ Sprint 2: Realtime hooks com cleanup seguro (sem memory leak)
 import { useRealtimeEvents } from "@/hooks/useRealtimeEvents";
+import { useMatchmakingQuery } from "@/hooks/useMatchmakingQuery";
+import { useNotifications } from "@/hooks/useNotifications";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import soccerField from "@/assets/soccer-field.jpg";
@@ -53,12 +55,17 @@ const AmenitiesGridSkeleton = () => (
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const condominiumId = user?.user_metadata?.condominium_id as string | undefined;
+  const { condominiumId } = useCondominiumId();
 
   // ✅ Sprint 2: React Query com cache inteligente (substituindo Zustand)
   const { data: events = [], isLoading: eventsLoading } = useEventsQuery(user?.id);
   const { data: amenities = [], isLoading: amenitiesLoading } = useAmenitiesQuery(condominiumId);
+  const { data: activeMatchmaking = [] } = useMatchmakingQuery(condominiumId);
   const joinEventMutation = useJoinEventMutation();
+  const { notifications, markAsRead } = useNotifications();
+
+  // Show only system notifications with title 'Você foi promovido!'
+  const promotionNotifications = notifications.filter(n => !n.read && n.type === 'system' && n.title === 'Você foi promovido!');
 
   // ✅ Sprint 2: Realtime — escuta eventos do condomínio em tempo real
   useRealtimeEvents(condominiumId);
@@ -149,6 +156,24 @@ const Dashboard = () => {
     return (
       <div className="space-y-8 animate-in fade-in duration-500 pb-10">
         
+        {promotionNotifications.length > 0 && (
+          <section className="bg-emerald-500/20 border border-emerald-500/50 p-4 rounded-2xl flex items-center justify-between shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-in fade-in slide-in-from-top-4">
+            <div className="flex-1 cursor-pointer" onClick={() => {
+              navigate(promotionNotifications[0].action_url || "/my-events");
+              markAsRead(promotionNotifications[0].id);
+            }}>
+              <p className="text-emerald-400 font-bold text-sm">🎉 {promotionNotifications[0].title}</p>
+              <p className="text-emerald-100/80 text-xs mt-1">{promotionNotifications[0].message}</p>
+            </div>
+            <button 
+              onClick={() => markAsRead(promotionNotifications[0].id)}
+              className="ml-4 w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/40"
+            >
+              <X size={16} />
+            </button>
+          </section>
+        )}
+
         {/* Welcome Hero - Clean Design */}
         <section className="bg-gradient-to-br from-[rgba(241,216,110,0.15)] to-transparent p-6 rounded-3xl border border-[rgba(241,216,110,0.2)] flex items-center justify-between">
           <div>
@@ -160,6 +185,32 @@ const Dashboard = () => {
             </p>
           </div>
         </section>
+
+        {/* Matchmaking Stories (Tô Disponível) */}
+        {activeMatchmaking.length > 0 && (
+          <section className="-mx-5 px-5">
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-minimal">
+              {activeMatchmaking.map((req) => (
+                <div key={req.id} className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer" onClick={() => navigate('/matchmaking')}>
+                  <div className="relative">
+                    {/* Pulsing ring */}
+                    <div className="absolute -inset-1 rounded-full border-2 border-emerald-500 animate-pulse"></div>
+                    <div className="w-16 h-16 rounded-full bg-slate-800 border-[3px] border-[#031d24] flex items-center justify-center relative z-10 overflow-hidden">
+                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${req.profiles?.full_name}`} alt="avatar" className="w-full h-full object-cover" />
+                    </div>
+                    {/* Online Dot */}
+                    <span className="absolute bottom-0 right-0 flex h-4 w-4 z-20">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-[#031d24]"></span>
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-white/80 font-medium">{req.profiles?.full_name?.split(' ')[0]}</span>
+                  <span className="text-[9px] text-emerald-400 bg-emerald-400/10 px-1.5 rounded">{req.sport}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Quick Actions (Row) */}
         <section className="flex justify-between items-start gap-2">

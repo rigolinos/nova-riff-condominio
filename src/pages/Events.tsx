@@ -5,18 +5,42 @@ import { Header } from "@/components/dashboard/header";
 import { EventSection } from "@/components/dashboard/event-section";
 import { EventFiltersImproved, ActiveFilters } from "@/components/event-filters-improved";
 import { EventData } from "@/components/dashboard/event-card";
-import { useEvents } from "@/hooks/useEvents";
+import { useEventsQuery, useJoinEventMutation, useLeaveEventMutation } from "@/hooks/useEventsQuery";
 import { useAuthAction } from "@/hooks/useAuthAction";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 function Events() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"mapa" | "buscar" | "eventos">("eventos");
-  const { events, loading, error, joinEvent, leaveEvent } = useEvents();
+  
+  const { user } = useAuth();
+  const { data: events = [], isLoading: loading, error } = useEventsQuery(user?.id);
+  const joinMutation = useJoinEventMutation();
+  const leaveMutation = useLeaveEventMutation();
+  
   const { toast } = useToast();
   const { requireAuth } = useAuthAction();
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({ sports: [], dates: [] });
+
+  const joinEvent = async (id: string) => {
+    if (!user) return;
+    try {
+      await joinMutation.mutateAsync({ eventId: id, userId: user.id });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const leaveEvent = async (id: string) => {
+    if (!user) return;
+    try {
+      await leaveMutation.mutateAsync({ eventId: id, userId: user.id });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Transform events to EventData format with participation logic
   const transformedEvents: EventData[] = events.map(event => {
@@ -91,11 +115,49 @@ function Events() {
       if (!matchesSport) return false;
     }
     
-    // Date filter (multi-select) - Note: Would require actual date parsing in production
-    // For now, we're keeping it simple
+    // Date filter (multi-select)
     if (activeFilters.dates.length > 0) {
-      // TODO: Implement actual date filtering logic
-      // This would parse event.date and check against selected date ranges
+      if (!event.date) return false;
+      
+      const [year, month, day] = event.date.split('-');
+      const eventDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      const dayOfWeek = today.getDay(); // 0 is Sunday, 6 is Saturday
+      const daysUntilWeekend = dayOfWeek === 0 ? 0 : 6 - dayOfWeek;
+      const thisWeekendStart = new Date(today);
+      thisWeekendStart.setDate(thisWeekendStart.getDate() + daysUntilWeekend);
+      
+      const thisWeekendEnd = new Date(thisWeekendStart);
+      thisWeekendEnd.setDate(thisWeekendEnd.getDate() + (dayOfWeek === 0 ? 0 : 1));
+      
+      const nextWeekStart = new Date(today);
+      nextWeekStart.setDate(today.getDate() + (7 - dayOfWeek + 1)); // Next Monday
+      
+      const nextWeekEnd = new Date(nextWeekStart);
+      nextWeekEnd.setDate(nextWeekStart.getDate() + 6); // Next Sunday
+
+      const matchesDate = activeFilters.dates.some(filterDate => {
+        switch (filterDate) {
+          case 'today':
+            return eventDate.getTime() === today.getTime();
+          case 'tomorrow':
+            return eventDate.getTime() === tomorrow.getTime();
+          case 'weekend':
+            return eventDate >= thisWeekendStart && eventDate <= thisWeekendEnd;
+          case 'next-week':
+            return eventDate >= nextWeekStart && eventDate <= nextWeekEnd;
+          default:
+            return false;
+        }
+      });
+      
+      if (!matchesDate) return false;
     }
     
     return true;

@@ -86,11 +86,10 @@ const UserProfile = () => {
 
   // Count praise tags for display - mapping to actual tags from evaluations
   const praiseCounts = {
-    habilidoso: profile.praise_tags?.filter(tag => tag === 'habilidoso').length || 0,
-    comunicativo: profile.praise_tags?.filter(tag => tag === 'comunicativo').length || 0,
-    trabalho_equipe: profile.praise_tags?.filter(tag => tag === 'trabalho_equipe').length || 0,
-    amigavel: profile.praise_tags?.filter(tag => tag === 'amigavel').length || 0,
-    esforcado: profile.praise_tags?.filter(tag => tag === 'esforcado').length || 0,
+    jogo_limpo: profile.praise_tags?.filter(tag => tag === 'jogo_limpo').length || 0,
+    pontual: profile.praise_tags?.filter(tag => tag === 'pontual').length || 0,
+    joga_junto: profile.praise_tags?.filter(tag => tag === 'joga_junto').length || 0,
+    craque: profile.praise_tags?.filter(tag => tag === 'craque').length || 0,
   };
 
   return (
@@ -225,34 +224,20 @@ const UserProfile = () => {
           {/* Elogios (Badges Positivas) */}
           <div className="glass-card p-5 rounded-3xl">
             <h3 className="text-white text-sm font-bold uppercase tracking-wider mb-5">Medalhas & Elogios</h3>
-            <div className="grid grid-cols-5 gap-3 w-full">
+            <div className="grid grid-cols-4 gap-3 w-full">
               <button
                 onClick={showUnderDevelopment}
                 className="flex flex-col items-center group relative cursor-help"
               >
                 <div className="relative w-12 h-12 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] flex items-center justify-center group-hover:bg-[rgba(241,216,110,0.1)] transition-colors">
                   <Trophy className="w-6 h-6 text-[rgba(241,216,110,1)]" />
-                  {praiseCounts.habilidoso > 0 && (
+                  {praiseCounts.craque > 0 && (
                     <div className="absolute -top-1 -right-1 bg-[rgba(241,216,110,1)] text-[#031d24] text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-black shadow-[0_0_10px_rgba(241,216,110,0.5)]">
-                      {praiseCounts.habilidoso}
+                      {praiseCounts.craque}
                     </div>
                   )}
                 </div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 mt-2">Craque</span>
-              </button>
-              <button
-                onClick={showUnderDevelopment}
-                className="flex flex-col items-center group relative cursor-help"
-              >
-                <div className="relative w-12 h-12 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] flex items-center justify-center group-hover:bg-[rgba(241,216,110,0.1)] transition-colors">
-                  <MessageCircle className="w-6 h-6 text-[rgba(241,216,110,1)]" />
-                  {praiseCounts.comunicativo > 0 && (
-                    <div className="absolute -top-1 -right-1 bg-[rgba(241,216,110,1)] text-[#031d24] text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-black shadow-[0_0_10px_rgba(241,216,110,0.5)]">
-                      {praiseCounts.comunicativo}
-                    </div>
-                  )}
-                </div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 mt-2">Broder</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 mt-2 text-center">Craque da<br/>Rodada</span>
               </button>
               <button
                 onClick={showUnderDevelopment}
@@ -260,13 +245,27 @@ const UserProfile = () => {
               >
                 <div className="relative w-12 h-12 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] flex items-center justify-center group-hover:bg-[rgba(241,216,110,0.1)] transition-colors">
                   <Users className="w-6 h-6 text-[rgba(241,216,110,1)]" />
-                  {praiseCounts.trabalho_equipe > 0 && (
+                  {praiseCounts.jogo_limpo > 0 && (
                     <div className="absolute -top-1 -right-1 bg-[rgba(241,216,110,1)] text-[#031d24] text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-black shadow-[0_0_10px_rgba(241,216,110,0.5)]">
-                      {praiseCounts.trabalho_equipe}
+                      {praiseCounts.jogo_limpo}
                     </div>
                   )}
                 </div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 mt-2">Equipe</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 mt-2 text-center">Jogo<br/>Limpo</span>
+              </button>
+              <button
+                onClick={showUnderDevelopment}
+                className="flex flex-col items-center group relative cursor-help"
+              >
+                <div className="relative w-12 h-12 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] flex items-center justify-center group-hover:bg-[rgba(241,216,110,0.1)] transition-colors">
+                  <MessageCircle className="w-6 h-6 text-[rgba(241,216,110,1)]" />
+                  {praiseCounts.joga_junto > 0 && (
+                    <div className="absolute -top-1 -right-1 bg-[rgba(241,216,110,1)] text-[#031d24] text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-black shadow-[0_0_10px_rgba(241,216,110,0.5)]">
+                      {praiseCounts.joga_junto}
+                    </div>
+                  )}
+                </div>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 mt-2 text-center">Joga<br/>Junto</span>
               </button>
               <button
                 onClick={showUnderDevelopment}
@@ -274,27 +273,13 @@ const UserProfile = () => {
               >
                 <div className="relative w-12 h-12 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] flex items-center justify-center group-hover:bg-[rgba(241,216,110,0.1)] transition-colors">
                   <Coffee className="w-6 h-6 text-[rgba(241,216,110,1)]" />
-                  {praiseCounts.amigavel > 0 && (
+                  {praiseCounts.pontual > 0 && (
                     <div className="absolute -top-1 -right-1 bg-[rgba(241,216,110,1)] text-[#031d24] text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-black shadow-[0_0_10px_rgba(241,216,110,0.5)]">
-                      {praiseCounts.amigavel}
+                      {praiseCounts.pontual}
                     </div>
                   )}
                 </div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 mt-2">Resenha</span>
-              </button>
-              <button
-                onClick={showUnderDevelopment}
-                className="flex flex-col items-center group relative cursor-help"
-              >
-                <div className="relative w-12 h-12 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)] flex items-center justify-center group-hover:bg-[rgba(241,216,110,0.1)] transition-colors">
-                  <Flag className="w-6 h-6 text-[rgba(241,216,110,1)]" />
-                  {praiseCounts.esforcado > 0 && (
-                    <div className="absolute -top-1 -right-1 bg-[rgba(241,216,110,1)] text-[#031d24] text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-black shadow-[0_0_10px_rgba(241,216,110,0.5)]">
-                      {praiseCounts.esforcado}
-                    </div>
-                  )}
-                </div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 mt-2">Focado</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 mt-2 text-center">Muito<br/>Pontual</span>
               </button>
             </div>
           </div>

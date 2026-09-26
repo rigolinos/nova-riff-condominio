@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/image-compression";
 
 const EditProfilePage = () => {
   const navigate = useNavigate();
@@ -41,6 +43,58 @@ const EditProfilePage = () => {
 
   const handleBack = () => {
     navigate("/profile/current");
+  };
+
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    try {
+      setIsUploadingPhoto(true);
+      
+      // 1. Comprimir imagem
+      const compressedFile = await compressImage(file);
+      
+      // 2. Criar caminho único para o avatar
+      const fileExt = "jpg";
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // 3. Fazer upload para o Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, compressedFile, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // 4. Pegar URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // 5. Atualizar perfil com a nova URL
+      const result = await updateProfile({ profile_photo_url: publicUrl });
+      
+      if (result?.success) {
+        toast({ title: "Foto atualizada com sucesso!" });
+      } else {
+        throw new Error("Erro ao salvar URL no perfil");
+      }
+    } catch (error: any) {
+      console.error('Erro no upload de foto:', error);
+      toast({
+        title: "Erro no upload",
+        description: error.message || "Não foi possível enviar a foto.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   };
 
   const handleSave = async () => {
@@ -100,8 +154,10 @@ const EditProfilePage = () => {
         {/* Profile Photo */}
         <div className="flex flex-col items-center space-y-4">
           <div className="relative">
-            <div className="w-24 h-24 bg-gray-600 rounded-full flex items-center justify-center">
-              {profile?.profile_photo_url ? (
+            <div className="w-24 h-24 bg-gray-600 rounded-full flex items-center justify-center overflow-hidden">
+              {isUploadingPhoto ? (
+                <span className="text-white text-sm">...</span>
+              ) : profile?.profile_photo_url ? (
                 <img 
                   src={profile.profile_photo_url} 
                   alt={profileData.fullName}
@@ -109,17 +165,25 @@ const EditProfilePage = () => {
                 />
               ) : (
                 <span className="text-white text-xl font-bold">
-                  {profileData.fullName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                  {profileData.fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'U'}
                 </span>
               )}
             </div>
-            <button className="absolute bottom-0 right-0 w-8 h-8 bg-[rgba(241,216,110,1)] rounded-full flex items-center justify-center">
+            <label htmlFor="photo-upload" className="absolute bottom-0 right-0 w-8 h-8 bg-[rgba(241,216,110,1)] rounded-full flex items-center justify-center cursor-pointer hover:bg-[rgba(241,216,110,0.8)] transition-colors">
               <Camera className="w-4 h-4 text-black" />
-            </button>
+              <input 
+                id="photo-upload" 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handlePhotoUpload}
+                disabled={isUploadingPhoto}
+              />
+            </label>
           </div>
-          <button className="text-[rgba(241,216,110,1)] text-sm">
-            Alterar foto do perfil
-          </button>
+          <label htmlFor="photo-upload" className="text-[rgba(241,216,110,1)] text-sm cursor-pointer hover:underline">
+            {isUploadingPhoto ? "Enviando..." : "Alterar foto do perfil"}
+          </label>
         </div>
 
         {/* Form Fields */}

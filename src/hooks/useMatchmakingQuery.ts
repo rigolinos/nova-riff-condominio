@@ -40,37 +40,11 @@ export interface MatchmakingRequest {
     full_name: string;
     apt_number: string;
     block_number: string;
+    phone?: string;
   };
 }
 
 // ---------------------------------------------------------------------------
-// Dados mockados
-// ---------------------------------------------------------------------------
-
-const MOCK_REQUESTS: MatchmakingRequest[] = [
-  {
-    id: "req-1",
-    user_id: "fake-user-id",
-    condominium_id: "mock-condo",
-    sport_name: "Futebol Society",
-    time_preference: "Hoje à noite",
-    status: "active",
-    created_at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
-    profiles: { full_name: "Marcos Silva", apt_number: "101", block_number: "A" },
-  },
-  {
-    id: "req-2",
-    user_id: "another-user-id",
-    condominium_id: "mock-condo",
-    sport_name: "Tênis",
-    time_preference: "Amanhã cedo",
-    status: "active",
-    created_at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
-    profiles: { full_name: "Ana Lima", apt_number: "204", block_number: "B" },
-  },
-];
 
 // ---------------------------------------------------------------------------
 // Hook: Lista de requests por condomínio (filtra expirados no client)
@@ -79,16 +53,9 @@ const MOCK_REQUESTS: MatchmakingRequest[] = [
 async function fetchMatchmakingRequests(
   condominiumId: string
 ): Promise<MatchmakingRequest[]> {
-  // BYPASS
-  const now = new Date();
-  return MOCK_REQUESTS.filter(
-    (r) => !r.expires_at || new Date(r.expires_at) > now
-  );
-
-  /* -- Código real --
   const { data, error } = await supabase
     .from("matchmaking_requests")
-    .select(`*, profiles:user_id (full_name, apt_number, block_number)`)
+    .select(`*, profiles:user_id (full_name, apt_number, block_number, phone)`)
     .eq("condominium_id", condominiumId)
     .eq("status", "active")
     .order("created_at", { ascending: false });
@@ -100,7 +67,6 @@ async function fetchMatchmakingRequests(
   return (data ?? []).filter(
     (r: MatchmakingRequest) => !r.expires_at || new Date(r.expires_at) > now
   );
-  */
 }
 
 export function useMatchmakingQuery(condominiumId?: string) {
@@ -127,10 +93,6 @@ export function useCreateMatchmakingMutation(condominiumId?: string) {
       // Valida com Zod (lança ZodError se inválido)
       const parsed = matchmakingSchema.parse(formData);
 
-      // BYPASS
-      return { success: true, data: parsed };
-
-      /* -- Código real --
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
@@ -143,7 +105,8 @@ export function useCreateMatchmakingMutation(condominiumId?: string) {
         status: "active",
       });
       if (error) throw error;
-      */
+      
+      return { success: true, data: parsed };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

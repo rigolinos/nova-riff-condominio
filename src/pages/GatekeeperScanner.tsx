@@ -90,26 +90,28 @@ function ValidationFeedback({ result, onReset }: ValidationFeedbackProps) {
 // -----------------------------------------------------------------------
 export default function GatekeeperScanner() {
   const navigate = useNavigate();
-  const { eventId } = useParams<{ eventId: string }>();
+  const { eventId, token } = useParams<{ eventId?: string; token?: string }>();
 
   const [mode, setMode] = useState<ScanMode>("manual");
   const [tokenInput, setTokenInput] = useState("");
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
 
   const validateMutation = useValidateGuestPassMutation();
-  const { data: passes = [], isLoading: passesLoading } = useGuestPassesQuery(eventId);
+  const { data: passes = [], isLoading: passesLoading } = useGuestPassesQuery(eventId || "");
 
   // Captura token da URL quando vindo de um QR Code scaneado pelo celular da câmera
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tokenFromUrl = params.get("token");
-    if (tokenFromUrl) {
-      handleValidate(tokenFromUrl);
+    
+    const activeToken = token || tokenFromUrl;
+    if (activeToken) {
+      handleValidate(activeToken);
     }
-  }, []);
+  }, [token]);
 
-  const handleValidate = async (token?: string) => {
-    const t = (token ?? tokenInput).trim();
+  const handleValidate = async (tokenStr?: string) => {
+    const t = (tokenStr ?? tokenInput).trim();
     if (!t) return;
 
     const result = await validateMutation.mutateAsync(t);

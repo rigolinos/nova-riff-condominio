@@ -33,11 +33,11 @@ async function seed() {
 
   // 2. Insert Amenities
   const amenitiesToInsert = [
-    { condominium_id: condoId, name: 'Quadra de Tênis', capacity: 4, type: 'Quartos' },
-    { condominium_id: condoId, name: 'Academia', capacity: 15, type: 'Fitness' },
-    { condominium_id: condoId, name: 'Piscina', capacity: 30, type: 'Clube' },
-    { condominium_id: condoId, name: 'Quadra de Futebol', capacity: 14, type: 'Campo' },
-    { condominium_id: condoId, name: 'Churrasqueira 1', capacity: 20, type: 'Lazer' }
+    { condominium_id: condoId, name: 'Quadra Poliesportiva', capacity: 14, type: 'Campo' },
+    { condominium_id: condoId, name: 'Quadra de Tênis / Beach Tennis', capacity: 4, type: 'Clube' },
+    { condominium_id: condoId, name: 'Churrasqueira / Espaço Gourmet', capacity: 20, type: 'Lazer' },
+    { condominium_id: condoId, name: 'Salão de Festas', capacity: 50, type: 'Lazer' },
+    { condominium_id: condoId, name: 'Academia / Sala de Funcional', capacity: 15, type: 'Fitness' }
   ];
 
   for (const amenity of amenitiesToInsert) {
@@ -112,8 +112,8 @@ async function seed() {
   // Fetch amenities to get their actual IDs
   const { data: amList } = await supabase.from('amenities').select('id, name');
   if (amList && amList.length > 0) {
-      const academia = amList.find(a => a.name === 'Academia');
-      const piscina = amList.find(a => a.name === 'Piscina');
+      const academia = amList.find(a => a.name === 'Academia / Sala de Funcional');
+      const piscina = amList.find(a => a.name === 'Salão de Festas');
       
       const checkins = [];
       if (academia) checkins.push({ user_id: uid, amenity_id: academia.id, status: 'active' });
@@ -128,14 +128,14 @@ async function seed() {
 
   // 6. Events (Games happening/scheduled)
   if (amList && amList.length > 0) {
-      const quadraTenis = amList.find(a => a.name === 'Quadra de Tênis');
+      const quadraTenis = amList.find(a => a.name === 'Quadra de Tênis / Beach Tennis');
       if (quadraTenis) {
           const { error: evErr } = await supabase.from('events').insert([
               { 
                   title: 'Torneio Interno de Tênis', 
                   condominium_id: condoId, 
                   amenity_id: quadraTenis.id,
-                  location: 'Quadra de Tênis',
+                  location: 'Quadra de Tênis / Beach Tennis',
                   date: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
                   time: '18:00',
                   max_participants: 4,

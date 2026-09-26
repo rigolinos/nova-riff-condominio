@@ -11,11 +11,11 @@ export const SecurityHeaders = () => {
     cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
     cspMeta.setAttribute('content', [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://tzvuzruustalqqbkanat.supabase.co https://js.stripe.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://jvxxnfrcxahycfjpvipf.supabase.co https://js.stripe.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https: http:",
-      "connect-src 'self' https://tzvuzruustalqqbkanat.supabase.co wss://tzvuzruustalqqbkanat.supabase.co https://api.stripe.com",
+      "connect-src 'self' https://jvxxnfrcxahycfjpvipf.supabase.co wss://jvxxnfrcxahycfjpvipf.supabase.co https://api.stripe.com",
       "frame-src 'self' https://js.stripe.com",
       "object-src 'none'",
       "base-uri 'self'"

@@ -4,9 +4,9 @@
  * Sprint 3 – Listagem da fila + inscrição via RPC join_event_or_waitlist.
  *
  * A RPC decide automaticamente: se há vaga → registered; se lotado → waiting_list.
- * A promoção da fila ocorre via trigger no banco (promote_from_waitlist).
- */
+ * A promoção da fila ocorre via trigger no banco (promote_from_waitlist).
 
+ */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -51,47 +51,15 @@ export interface JoinEventResult {
 }
 
 // ---------------------------------------------------------------------------
-// Dados mockados
-// ---------------------------------------------------------------------------
 
-const MOCK_PARTICIPANTS: EventParticipant[] = [
-  {
-    id: "part-1",
-    event_id: "event-1",
-    user_id: "user-a",
-    status: "registered",
-    created_at: new Date().toISOString(),
-    profiles: { full_name: "Rafael Mota", apt_number: "301", block_number: "C" },
-  },
-  {
-    id: "part-2",
-    event_id: "event-1",
-    user_id: "user-b",
-    status: "registered",
-    created_at: new Date().toISOString(),
-    profiles: { full_name: "Luiza Carvalho", apt_number: "102", block_number: "A" },
-  },
-  {
-    id: "part-3",
-    event_id: "event-1",
-    user_id: "user-c",
-    status: "waiting_list",
-    waitlist_position: 1,
-    created_at: new Date().toISOString(),
-    profiles: { full_name: "Diego Faria", apt_number: "205", block_number: "B" },
-  },
-];
 
 // ---------------------------------------------------------------------------
 // Hook: Participantes de um evento (confirmados + fila)
 // ---------------------------------------------------------------------------
 
 async function fetchParticipants(eventId: string): Promise<EventParticipant[]> {
-  // BYPASS
-  return MOCK_PARTICIPANTS.filter(p => p.event_id === eventId);
-
-  /* -- Código real --
-  const { data, error } = await supabase
+  
+    const { data, error } = await supabase
     .from("event_participants")
     .select(`*, profiles:user_id (full_name, apt_number, block_number, avatar_url)`)
     .eq("event_id", eventId)
@@ -100,8 +68,7 @@ async function fetchParticipants(eventId: string): Promise<EventParticipant[]> {
     .order("created_at", { ascending: true });
 
   if (error) throw error;
-  return data ?? [];
-  */
+  return data ?? [];
 }
 
 export function useWaitlistQuery(eventId?: string) {
@@ -127,34 +94,12 @@ export function useJoinOrWaitlistMutation(eventId?: string) {
 
   return useMutation({
     mutationFn: async (userId: string): Promise<JoinEventResult> => {
-      // BYPASS: simula lógica da RPC localmente
-      const confirmed = MOCK_PARTICIPANTS.filter(
-        p => p.event_id === (eventId ?? "") && p.status === "registered"
-      );
-      const maxParticipants = 10; // mock
-
-      if (confirmed.length < maxParticipants) {
-        return { success: true, status: "registered", message: "Inscrição confirmada!" };
-      } else {
-        const pos = MOCK_PARTICIPANTS.filter(
-          p => p.event_id === (eventId ?? "") && p.status === "waiting_list"
-        ).length + 1;
-        return {
-          success: true,
-          status: "waiting_list",
-          position: pos,
-          message: `Evento lotado! Você é o ${pos}º da fila de espera.`,
-        };
-      }
-
-      /* -- Código real via RPC --
       const { data, error } = await supabase.rpc("join_event_or_waitlist", {
         p_event_id: eventId,
         p_user_id: userId,
       });
       if (error) throw error;
-      return data as JoinEventResult;
-      */
+      return data as JoinEventResult;
     },
     onSuccess: (result) => {
       // Invalida tanto a fila quanto a lista de eventos
@@ -185,19 +130,15 @@ export function useCancelParticipationMutation(eventId?: string) {
 
   return useMutation({
     mutationFn: async (userId: string): Promise<void> => {
-      // BYPASS
-      return;
-
-      /* -- Código real --
-      const { error } = await supabase
+      
+            const { error } = await supabase
         .from("event_participants")
         .update({ status: "cancelled" })
         .eq("event_id", eventId)
         .eq("user_id", userId);
 
       if (error) throw error;
-      // O trigger promote_from_waitlist é acionado automaticamente no banco
-      */
+      // O trigger promote_from_waitlist é acionado automaticamente no banco
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: waitlistKeys.byEvent(eventId ?? "") });
@@ -209,3 +150,4 @@ export function useCancelParticipationMutation(eventId?: string) {
     },
   });
 }
+

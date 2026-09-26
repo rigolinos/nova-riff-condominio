@@ -6,6 +6,7 @@ interface Profile {
   full_name: string;
   apt_number?: string;
   block_number?: string;
+  phone?: string;
 }
 
 interface MatchmakingRequest {
@@ -71,9 +72,20 @@ export const MatchmakingList = ({ requests }: MatchmakingListProps) => {
             <span className="text-[rgba(238,243,243,0.4)] text-[10px]">
               {formatDistanceToNow(new Date(request.created_at), { addSuffix: true, locale: ptBR })}
             </span>
-            <button className="mt-2 text-[rgba(241,216,110,1)] text-xs font-bold px-3 py-1.5 bg-[rgba(241,216,110,0.1)] rounded-full hover:bg-[rgba(241,216,110,0.2)] transition-colors lg:opacity-0 group-hover:opacity-100">
-              Mandar Mensagem
-            </button>
+            {request.profiles?.phone ? (
+              <a 
+                href={`https://wa.me/${request.profiles.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Fala! Vi no Riff seu interesse para jogar ${request.sport_name}. Bora marcar?`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 text-[#0f172a] text-xs font-bold px-3 py-1.5 bg-[#25D366] rounded-full hover:bg-[#20bd5a] transition-colors lg:opacity-0 group-hover:opacity-100 flex items-center gap-1 shadow-lg"
+              >
+                Chamar no Zap
+              </a>
+            ) : (
+              <button disabled className="mt-2 text-white/30 text-xs font-bold px-3 py-1.5 bg-white/5 rounded-full lg:opacity-0 group-hover:opacity-100 cursor-not-allowed">
+                Sem WhatsApp
+              </button>
+            )}
           </div>
         </div>
       ))}

@@ -24,7 +24,11 @@ import EventEvaluation from "./pages/EventEvaluation";
 import Matchmaking from "./pages/Matchmaking";
 import Amenities from "./pages/Amenities";
 import GuestList from "./pages/GuestList";
+import PortariaDashboard from "./pages/PortariaDashboard";
 import GatekeeperScanner from "./pages/GatekeeperScanner";
+import Onboarding from "./pages/Onboarding";
+import TermsOfUse from "./pages/TermsOfUse";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PublicRoute } from "./components/PublicRoute";
@@ -52,8 +56,11 @@ const App = () => (
           <Route path="/events" element={<PublicRoute><Events /></PublicRoute>} />
           <Route path="/event/:id" element={<PublicRoute><EventProfile /></PublicRoute>} />
           <Route path="/profile/:id" element={<PublicRoute><UserProfile /></PublicRoute>} />
+          <Route path="/termos" element={<PublicRoute><TermsOfUse /></PublicRoute>} />
+          <Route path="/privacidade" element={<PublicRoute><PrivacyPolicy /></PublicRoute>} />
           
           {/* App Dashboard (New Condominium Home) */}
+          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/portaria" element={<ProtectedRoute><PortariaDashboard /></ProtectedRoute>} />
           <Route path="/matchmaking" element={<ProtectedRoute><Matchmaking /></ProtectedRoute>} />

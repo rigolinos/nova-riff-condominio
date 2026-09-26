@@ -72,21 +72,8 @@ export const SignupForm: React.FC = () => {
     password: "",
     confirmPassword: "",
     fullName: "",
-    inviteCode: "",
-    condominiumId: "",
-    block: "",
-    apt: ""
+    acceptedTerms: false,
   });
-  
-  const [condominiums, setCondominiums] = useState<{id: string, name: string}[]>([]);
-
-  React.useEffect(() => {
-    const fetchCondos = async () => {
-      const { data } = await supabase.from('condominiums').select('id, name').order('name');
-      if (data) setCondominiums(data);
-    };
-    fetchCondos();
-  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -99,19 +86,14 @@ export const SignupForm: React.FC = () => {
       formData.fullName.trim().length > 0 &&
       formData.password.length >= 6 &&
       formData.confirmPassword.length >= 6 &&
-      formData.password === formData.confirmPassword
+      formData.password === formData.confirmPassword &&
+      formData.acceptedTerms
     );
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔍 Iniciando processo de signup...');
-    console.log('📝 Dados do formulário:', { 
-      email: formData.email, 
-      password: formData.password ? '***' : 'vazio',
-      confirmPassword: formData.confirmPassword ? '***' : 'vazio'
-    });
     // **SECURITY: Validate email format**
     const emailValidation = validateEmail(formData.email);
     if (!emailValidation.isValid) {
@@ -133,7 +115,7 @@ export const SignupForm: React.FC = () => {
     }
 
     // **SECURITY: Rate limiting for signup attempts**
-    if (isRateLimited(`signup_${formData.email.toLowerCase()}`, 3, 3600000)) { // 3 attempts per hour
+    if (isRateLimited(`signup_${formData.email.toLowerCase()}`, 3, 3600000)) {
       toast.error("Muitas tentativas de cadastro. Tente novamente em 1 hora.");
       return;
     }
@@ -141,30 +123,7 @@ export const SignupForm: React.FC = () => {
     setIsLoading(true);
     try {
       const sanitizedEmail = formData.email.trim().toLowerCase();
-      console.log('📧 Email sanitizado:', sanitizedEmail);
       
-      let finalCondoId = formData.condominiumId || null;
-      
-      if (formData.inviteCode.trim()) {
-        console.log('🏢 Consultando código de convite:', formData.inviteCode);
-        const { data: condoData, error: condoError } = await supabase
-          .from('condominiums')
-          .select('id, name')
-          .eq('invite_code', formData.inviteCode.trim())
-          .single();
-          
-        if (condoError || !condoData) {
-          toast.error("Condomínio não encontrado. Verifique o código de convite.");
-          setIsLoading(false);
-          return;
-        }
-        finalCondoId = condoData.id;
-        console.log(`✅ Condomínio encontrado pelo convite: ${condoData.name} (${condoData.id})`);
-      }
-
-      console.log('🚀 Chamando supabase.auth.signUp...');
-      
-      // Criar usuário imediatamente no Supabase
       const { data, error } = await supabase.auth.signUp({
         email: sanitizedEmail,
         password: formData.password,
@@ -172,18 +131,11 @@ export const SignupForm: React.FC = () => {
           emailRedirectTo: `${window.location.origin}/login?confirmed=true`,
           data: {
             full_name: formData.fullName.trim(),
-            condominium_id: finalCondoId,
-            block_number: formData.block.trim(),
-            apt_number: formData.apt.trim(),
-            status: formData.inviteCode.trim() ? "approved" : "approved" // FIXME MVP: auto-approve everyone for tests
           }
         }
       });
 
-      console.log('📊 Resposta do Supabase:', { data, error });
-
       if (error) {
-        // Detectar vários tipos de erros relacionados a email duplicado
         if (error.message.includes('User already registered') || 
             error.message.includes('already exists') ||
             error.message.includes('duplicate') ||
@@ -198,21 +150,31 @@ export const SignupForm: React.FC = () => {
         }
       }
 
-      // Salvar email para os próximos passos do onboarding
-      localStorage.setItem('onboardingEmail', sanitizedEmail);
-      console.log('✅ Email salvo no localStorage:', sanitizedEmail);
+      toast.success("✅ Conta criada com sucesso!");
       
-      toast.success("✅ Usuário criado com sucesso!");
-      toast.info("📧 Enviamos um email de confirmação para " + sanitizedEmail);
-      toast.info("Você já pode acessar a plataforma!");
-      
-      navigate("/dashboard");
+      // Redirecionar para onboarding (vincular condomínio)
+      navigate("/onboarding");
       
     } catch (error) {
       console.error('Erro no signup:', error);
       toast.error("Erro ao criar usuário. Tente novamente.");
     } finally {
       setIsLoading(false);
+    }
+  };
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/onboarding`
+        }
+      });
+      if (error) {
+        toast.error("Erro ao fazer cadastro com Google: " + error.message);
+      }
+    } catch (error) {
+      toast.error("Erro ao fazer cadastro com Google");
     }
   };
 
@@ -262,49 +224,6 @@ export const SignupForm: React.FC = () => {
           helperText="Mínimo de 6 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais"
         />
 
-        <div className="w-full flex flex-col gap-4">
-          <CustomInput
-            type="text"
-            name="invite-code"
-            placeholder="Código de Convite Opcional:"
-            value={formData.inviteCode}
-            onChange={(value) => handleInputChange("inviteCode", value)}
-            autoComplete="off"
-          />
-          
-          {!formData.inviteCode && (
-            <select
-              value={formData.condominiumId}
-              onChange={(e) => handleInputChange("condominiumId", e.target.value)}
-              className="flex h-[60px] w-full rounded-3xl border-2 border-[rgba(119,136,143,1)] bg-transparent px-6 text-base text-[rgba(238,243,243,1)] focus-visible:outline-none focus-visible:border-[rgba(241,216,110,1)] [&>option]:text-black"
-            >
-              <option value="">Selecione seu Condomínio (Opcional)...</option>
-              {condominiums.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        <div className="flex w-full max-w-[600px] gap-4">
-          <CustomInput
-            type="text"
-            name="block"
-            placeholder="Bloco/Torre (Opcional):"
-            value={formData.block}
-            onChange={(value) => handleInputChange("block", value)}
-            autoComplete="off"
-          />
-          <CustomInput
-            type="text"
-            name="apt"
-            placeholder="Nº do Apto (Opcional):"
-            value={formData.apt}
-            onChange={(value) => handleInputChange("apt", value)}
-            autoComplete="off"
-          />
-        </div>
-
         <CustomInput
           type="password"
           name="confirm-password"
@@ -318,6 +237,19 @@ export const SignupForm: React.FC = () => {
           autoComplete="new-password"
           helperText="As senhas devem ser idênticas"
         />
+
+        <div className="w-full max-w-[600px] flex items-start gap-3 mt-4 text-left">
+          <input 
+            type="checkbox" 
+            id="terms" 
+            className="mt-1 w-5 h-5 rounded border-gray-400 bg-transparent"
+            checked={formData.acceptedTerms}
+            onChange={(e) => handleInputChange("acceptedTerms", e.target.checked as any)}
+          />
+          <label htmlFor="terms" className="text-sm font-normal text-white/80 leading-snug">
+            Li e concordo com os <Link to="/termos" className="underline hover:text-white">Termos de Uso</Link> e a <Link to="/privacidade" className="underline hover:text-white">Política de Privacidade</Link>.
+          </label>
+        </div>
 
         <div className="mt-8 w-full max-w-[600px]">
           <PrimaryButton
@@ -363,6 +295,7 @@ export const SignupForm: React.FC = () => {
             type="button"
             className="w-10 h-10 flex items-center justify-center text-[rgba(238,243,243,1)] hover:opacity-80 transition-opacity"
             aria-label="Entrar com Google"
+            onClick={handleGoogleLogin}
           >
             <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

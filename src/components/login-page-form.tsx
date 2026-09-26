@@ -65,6 +65,11 @@ export const LoginPageForm: React.FC = () => {
     password: ""
   });
 
+  // Password Reset State
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
+
   // Check for email confirmation success
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -141,6 +146,46 @@ export const LoginPageForm: React.FC = () => {
       setIsLoading(false);
     }
   };
+  const handleGoogleLogin = async () => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      if (error) {
+        toast.error("Erro ao fazer login com Google: " + error.message);
+      }
+    } catch (error) {
+      toast.error("Erro ao fazer login com Google");
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateEmail(resetEmail)) {
+      toast.error("Digite um e-mail válido.");
+      return;
+    }
+    try {
+      setIsResetting(true);
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/login?reset=true`,
+      });
+      if (error) throw error;
+      toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
+      setShowResetModal(false);
+      setResetEmail("");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "Erro ao enviar e-mail de recuperação.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   return (
     <main className="bg-[rgba(3,29,36,1)] flex max-w-[480px] w-full flex-col overflow-hidden items-center text-sm text-[rgba(238,243,243,1)] font-bold text-center leading-[1.4] mx-auto pt-[120px] pb-[65px] px-[33px] min-h-screen">
@@ -177,7 +222,17 @@ export const LoginPageForm: React.FC = () => {
           autoComplete="current-password"
         />
 
-        <div className="mt-[40px]">
+        <div className="w-full flex justify-end mt-2 pr-2">
+          <button
+            type="button"
+            onClick={() => setShowResetModal(true)}
+            className="text-[rgba(238,243,243,1)] opacity-70 hover:opacity-100 transition-opacity text-sm underline"
+          >
+            Esqueci minha senha
+          </button>
+        </div>
+
+        <div className="mt-[20px]">
           <PrimaryButton
             type="submit"
             disabled={isLoading || !isFormValid()}
@@ -212,6 +267,7 @@ export const LoginPageForm: React.FC = () => {
             type="button"
             className="w-12 h-12 flex items-center justify-center text-[rgba(238,243,243,1)] hover:opacity-80 transition-opacity"
             aria-label="Entrar com Google"
+            onClick={handleGoogleLogin}
           >
             <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -231,6 +287,41 @@ export const LoginPageForm: React.FC = () => {
           </Link>
         </div>
       </form>
+
+      {/* Reset Password Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[rgba(3,29,36,1)] border border-white/10 rounded-3xl p-8 max-w-sm w-full shadow-2xl relative">
+            <button 
+              onClick={() => setShowResetModal(false)}
+              className="absolute right-4 top-4 text-white/50 hover:text-white"
+            >
+              ✕
+            </button>
+            <h3 className="text-xl font-bold text-white mb-2">Recuperar Senha</h3>
+            <p className="text-white/60 text-sm mb-6 font-normal">
+              Digite seu e-mail abaixo. Enviaremos um link para você cadastrar uma nova senha.
+            </p>
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <input
+                type="email"
+                placeholder="Seu e-mail"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                required
+                className="flex h-[50px] w-full rounded-2xl border border-[rgba(119,136,143,0.5)] bg-[rgba(119,136,143,0.1)] px-4 text-white placeholder:text-white/50 focus:outline-none focus:border-[rgba(241,216,110,1)]"
+              />
+              <PrimaryButton
+                type="submit"
+                disabled={isResetting || !resetEmail}
+                className="w-full"
+              >
+                {isResetting ? "Enviando..." : "Enviar Link"}
+              </PrimaryButton>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

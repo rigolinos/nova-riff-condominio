@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Header } from "@/components/dashboard/header";
 import { CheckinCard } from "@/components/amenities/checkin-card";
 import { useAuth } from "@/hooks/useAuth";
-import { useAmenityStore } from "@/store/amenityStore";
+import { useAmenitiesQuery, useCheckInMutation, useCheckOutMutation } from "@/hooks/useAmenitiesQuery";
+import { useCondominiumId } from "@/hooks/useCondominiumId";
 import { ArrowLeft, Dumbbell, Waves, Grip, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -20,15 +21,14 @@ const getIconForAmenity = (name: string) => {
 const Amenities = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { amenities, fetchAmenities, checkIn, checkOut, loading } = useAmenityStore();
+  const { condominiumId } = useCondominiumId();
+  
+  const { data: amenities = [], isLoading: loading } = useAmenitiesQuery(condominiumId);
+  const checkInMutation = useCheckInMutation();
+  const checkOutMutation = useCheckOutMutation();
+
   const [activeCheckinId, setActiveCheckinId] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (user?.user_metadata?.condominium_id) {
-      fetchAmenities(user.user_metadata.condominium_id);
-    }
-  }, [user, fetchAmenities]);
 
   // Check which amenity the user is currently checked into
   useEffect(() => {
@@ -40,7 +40,7 @@ const Amenities = () => {
         .eq('user_id', user.id)
         .eq('status', 'active')
         .maybeSingle();
-
+      
       if (!error && data) {
         setActiveCheckinId(data.amenity_id);
       } else {
@@ -49,34 +49,39 @@ const Amenities = () => {
     };
     
     fetchUserCheckin();
-  }, [user, amenities]); // Re-fetch on amenities change too
+  }, [user, amenities]); // Re-check when amenities change (e.g. after checkin)
 
-  const handleCheckIn = async (amenityId: string) => {
-    if (activeCheckinId && activeCheckinId !== amenityId) {
-      toast.error("Você já fez check-in em outro local. Faça check-out primeiro.");
+  const handleCheckIn = async (id: string) => {
+    if (!user) {
+      toast.error("Você precisa estar logado");
       return;
     }
-    setActionLoadingId(amenityId);
-    const success = await checkIn(amenityId);
-    if (success) {
+    
+    setActionLoadingId(id);
+    try {
+      await checkInMutation.mutateAsync({ amenityId: id, userId: user.id });
       toast.success("Check-in realizado com sucesso!");
-      setActiveCheckinId(amenityId);
-    } else {
-      toast.error("Não foi possível fazer o check-in.");
+    } catch (error) {
+      toast.error("Erro ao realizar check-in");
+      console.error(error);
+    } finally {
+      setActionLoadingId(null);
     }
-    setActionLoadingId(null);
   };
 
-  const handleCheckOut = async (amenityId: string) => {
-    setActionLoadingId(amenityId);
-    const success = await checkOut(amenityId);
-    if (success) {
-      toast.success("Check-out realizado com sucesso!");
-      setActiveCheckinId(null);
-    } else {
-      toast.error("Não foi possível fazer o check-out.");
+  const handleCheckOut = async (id: string) => {
+    if (!user) return;
+    
+    setActionLoadingId(id);
+    try {
+      await checkOutMutation.mutateAsync({ amenityId: id, userId: user.id });
+      toast.success("Check-out realizado!");
+    } catch (error) {
+      toast.error("Erro ao realizar check-out");
+      console.error(error);
+    } finally {
+      setActionLoadingId(null);
     }
-    setActionLoadingId(null);
   };
 
   return (

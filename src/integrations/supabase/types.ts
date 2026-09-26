@@ -175,6 +175,8 @@ export type Database = {
           created_at: string
           id: string
           invite_code: string
+          lat?: number | null
+          lng?: number | null
           name: string
         }
         Insert: {

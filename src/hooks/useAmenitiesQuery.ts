@@ -1,29 +1,11 @@
-/**
- * @file useAmenitiesQuery.ts
- * @description React Query hooks para dados de áreas comuns (amenities).
- * Sprint 1 – Migração do Zustand → React Query para dados de servidor.
- *
- * Cache: staleTime = 5 min (lotação muda com frequência moderada)
- * Realtime será adicionado na Sprint 2 via useRealtimeSubscription.
- */
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-// ---------------------------------------------------------------------------
-// Keys de cache
-// ---------------------------------------------------------------------------
-
 export const amenityKeys = {
   all: ["amenities"] as const,
-  byCondominium: (condoId: string) =>
-    [...amenityKeys.all, condoId] as const,
+  byCondominium: (condoId: string) => [...amenityKeys.all, condoId] as const,
 };
-
-// ---------------------------------------------------------------------------
-// Tipos
-// ---------------------------------------------------------------------------
 
 export interface Amenity {
   id: string;
@@ -35,26 +17,7 @@ export interface Amenity {
   status?: string;
 }
 
-// ---------------------------------------------------------------------------
-// Dados mockados (bypass de auth)
-// ---------------------------------------------------------------------------
-
-const MOCK_AMENITIES: Amenity[] = [
-  { id: "1", condominium_id: "mock-condo", name: "Quadra de Tênis", capacity: 4, occupancy: 2, status: "Ocupado" },
-  { id: "2", condominium_id: "mock-condo", name: "Piscina", capacity: 20, occupancy: 5, status: "Livre" },
-  { id: "3", condominium_id: "mock-condo", name: "Academia", capacity: 10, occupancy: 10, status: "Lotado" },
-  { id: "4", condominium_id: "mock-condo", name: "Salão de Festas", capacity: 50, occupancy: 0, status: "Livre" },
-];
-
-// ---------------------------------------------------------------------------
-// Hook: Lista de amenities por condomínio
-// ---------------------------------------------------------------------------
-
 async function fetchAmenities(condominiumId: string): Promise<Amenity[]> {
-  // BYPASS: retorna dados mockados enquanto a auth está desativada
-  return MOCK_AMENITIES.map((a) => ({ ...a, condominium_id: condominiumId }));
-
-  /* -- Código real (será reativado na Sprint 2) --
   const { data: amenitiesData, error: amError } = await supabase
     .from("amenities")
     .select("*")
@@ -81,57 +44,36 @@ async function fetchAmenities(condominiumId: string): Promise<Amenity[]> {
     else if (currentOcc > 0) status = "Ocupado";
     return { ...am, occupancy: currentOcc, status };
   });
-  */
 }
 
 export function useAmenitiesQuery(condominiumId?: string) {
   return useQuery({
     queryKey: amenityKeys.byCondominium(condominiumId ?? ""),
-    queryFn: () => fetchAmenities(condominiumId ?? "mock-condo"),
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    queryFn: () => fetchAmenities(condominiumId ?? ""),
+    staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
-    enabled: true, // sempre habilitado no modo bypass
+    enabled: !!condominiumId,
     retry: 2,
   });
 }
-
-// ---------------------------------------------------------------------------
-// Mutation: Check-in em área comum
-// ---------------------------------------------------------------------------
 
 export function useCheckInMutation(condominiumId?: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      amenityId,
-      userId,
-    }: {
-      amenityId: string;
-      userId: string;
-    }) => {
-      // BYPASS: apenas atualiza cache local
-      return { success: true };
-
-      /* -- Código real --
+    mutationFn: async ({ amenityId, userId }: { amenityId: string; userId: string; }) => {
       const { error } = await supabase.from("amenity_checkins").insert({
         user_id: userId,
         amenity_id: amenityId,
         status: "active",
       });
       if (error) throw error;
-      */
+      return { success: true };
     },
     onSuccess: (_data, { amenityId }) => {
-      // Atualização otimista no cache
       queryClient.setQueryData<Amenity[]>(
         amenityKeys.byCondominium(condominiumId ?? ""),
-        (old) =>
-          old?.map((a) =>
-            a.id === amenityId
-              ? { ...a, occupancy: (a.occupancy || 0) + 1, status: "Ocupado" }
-              : a
-          )
+        (old) => old?.map((a) => a.id === amenityId ? { ...a, occupancy: (a.occupancy || 0) + 1, status: "Ocupado" } : a)
       );
     },
     onError: () => {
@@ -140,25 +82,11 @@ export function useCheckInMutation(condominiumId?: string) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Mutation: Check-out de área comum
-// ---------------------------------------------------------------------------
-
 export function useCheckOutMutation(condominiumId?: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      amenityId,
-      userId,
-    }: {
-      amenityId: string;
-      userId: string;
-    }) => {
-      // BYPASS
-      return { success: true };
-
-      /* -- Código real --
+    mutationFn: async ({ amenityId, userId }: { amenityId: string; userId: string; }) => {
       const { error } = await supabase
         .from("amenity_checkins")
         .update({ status: "completed", checkout_time: new Date().toISOString() })
@@ -166,21 +94,12 @@ export function useCheckOutMutation(condominiumId?: string) {
         .eq("user_id", userId)
         .eq("status", "active");
       if (error) throw error;
-      */
+      return { success: true };
     },
     onSuccess: (_data, { amenityId }) => {
       queryClient.setQueryData<Amenity[]>(
         amenityKeys.byCondominium(condominiumId ?? ""),
-        (old) =>
-          old?.map((a) =>
-            a.id === amenityId
-              ? {
-                  ...a,
-                  occupancy: Math.max((a.occupancy || 1) - 1, 0),
-                  status: (a.occupancy || 1) - 1 > 0 ? "Ocupado" : "Livre",
-                }
-              : a
-          )
+        (old) => old?.map((a) => a.id === amenityId ? { ...a, occupancy: Math.max((a.occupancy || 1) - 1, 0), status: (a.occupancy || 1) - 1 > 0 ? "Ocupado" : "Livre" } : a)
       );
     },
     onError: () => {

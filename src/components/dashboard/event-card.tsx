@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Users, Star, X, Check, Pause, ArrowRight, LocateFixed, Trophy, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Users, User, Star, X, Check, Pause, ArrowRight, LocateFixed, Trophy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -248,6 +248,25 @@ export function EventCard({ event, onAction }: EventCardProps) {
               <div className="h-3.5 w-[1px] bg-white/20"></div>
               <span className="text-white font-semibold text-sm tracking-wide">{event.time}</span>
             </div>
+
+            {/* Avatar Group - Prova Social */}
+            {event.participants && event.participants > 0 && (
+              <div className="flex items-center gap-2 pt-1">
+                <div className="flex -space-x-2">
+                  {Array.from({ length: Math.min(event.participants, 3) }).map((_, i) => (
+                    <div 
+                      key={i} 
+                      className="w-6 h-6 rounded-full bg-slate-400 border border-[#031d24] flex items-center justify-center overflow-hidden"
+                    >
+                      <User className="w-3.5 h-3.5 text-white/70" />
+                    </div>
+                  ))}
+                </div>
+                <span className="text-white/60 text-xs font-semibold tracking-wide">
+                  +{event.participants} vizinhos confirmados
+                </span>
+              </div>
+            )}
 
             {/* Event Info Tags */}
             <div className="flex flex-wrap gap-2">

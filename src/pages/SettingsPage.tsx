@@ -3,6 +3,7 @@ import { ArrowLeft, User, Settings, ChevronRight, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,9 +20,36 @@ const SettingsPage = () => {
   const { signOut } = useAuth();
   const { toast } = useToast();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleBack = () => {
     navigate("/dashboard");
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      const { data, error } = await supabase.rpc('delete_user_account');
+      if (error) throw error;
+      
+      toast({
+        title: "Conta excluída",
+        description: "Seus dados foram removidos com sucesso.",
+      });
+      // Auth change will trigger redirect to /
+      await signOut();
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a conta. Contate o suporte.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
   };
 
   const handleEditProfile = () => {
@@ -128,6 +156,22 @@ const SettingsPage = () => {
           </div>
           <ChevronRight className="w-5 h-5 text-gray-400" />
         </button>
+        {/* Delete Account Button */}
+        <div className="pt-8">
+          <button
+            onClick={() => setShowDeleteDialog(true)}
+            className="w-full bg-red-500/10 hover:bg-red-500/20 rounded-lg p-4 flex items-center space-x-4 transition-colors border border-red-500/20"
+          >
+            <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+              <LogOut className="w-6 h-6 text-red-500" />
+            </div>
+            <div className="flex-1 text-left">
+              <h3 className="text-red-400 font-medium">Excluir Conta</h3>
+              <p className="text-red-400/70 text-sm">Apagar todos os seus dados</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-red-500/50" />
+          </button>
+        </div>
       </div>
 
       {/* Logout Confirmation Dialog */}
@@ -148,6 +192,30 @@ const SettingsPage = () => {
               className="bg-[rgba(241,216,110,1)] text-black hover:bg-[rgba(241,216,110,0.8)]"
             >
               Sair
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Account Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="bg-[rgba(3,29,36,0.98)] border-red-500/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-500">Excluir Conta Permanentemente</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Esta ação é irreversível. Todos os seus dados pessoais, histórico de eventos e reservas serão removidos permanentemente para cumprimento da LGPD. Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting} className="bg-[rgba(119,136,143,0.1)] text-white border-[rgba(119,136,143,0.3)] hover:bg-[rgba(119,136,143,0.2)]">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              className="bg-red-500 text-white hover:bg-red-600"
+            >
+              {isDeleting ? "Excluindo..." : "Sim, Excluir Minha Conta"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

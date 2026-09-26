@@ -12,13 +12,13 @@ import { MatchmakingListSkeleton } from "@/components/matchmaking/MatchmakingCar
 import { useAuth } from "@/hooks/useAuth";
 import { useMatchmakingQuery } from "@/hooks/useMatchmakingQuery";
 import { useRealtimeMatchmaking } from "@/hooks/useRealtimeMatchmaking";
+import { useCondominiumId } from "@/hooks/useCondominiumId";
 import { ArrowLeft, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Matchmaking = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const condominiumId = user?.user_metadata?.condominium_id as string | undefined;
+  const { condominiumId } = useCondominiumId();
 
   // ✅ Sprint 2: React Query com staleTime curto (30s) para dado dinâmico
   const { data: requests = [], isLoading } = useMatchmakingQuery(condominiumId);
